@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Restaurant, getRestaurantsByMenuId, getRestaurantsByCategory } from "@/data/menuData";
+import { Restaurant, getRestaurantsByMenuId } from "@/data/menuData";
 import RestaurantCard from "./RestaurantCard";
 
 type Props = {
@@ -25,15 +25,14 @@ export default function ResultModal({
   const [confetti, setConfetti] = useState(true);
 
   useEffect(() => {
+    // 해당 메뉴 맛집만 — 없으면 빈 배열
     const byMenu = getRestaurantsByMenuId(menuId);
-    if (byMenu.length > 0) {
-      setRestaurants(byMenu.slice(0, 5));
-    } else {
-      setRestaurants(getRestaurantsByCategory(categoryId).slice(0, 5));
-    }
+    setRestaurants(byMenu.slice(0, 5));
     const t = setTimeout(() => setConfetti(false), 3000);
     return () => clearTimeout(t);
-  }, [menuId, categoryId]);
+  }, [menuId]);
+
+  const naverSearchUrl = `https://map.naver.com/v5/search/신림역 ${menuName}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -69,25 +68,40 @@ export default function ResultModal({
 
         {/* Restaurants */}
         <div className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <h3 className="font-bold text-gray-800">
-              📍 신림역 근처 {menuName} 맛집
-            </h3>
-            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-              TOP {restaurants.length}
-            </span>
-          </div>
-
           {restaurants.length > 0 ? (
-            <div className="space-y-3">
-              {restaurants.map((r) => (
-                <RestaurantCard key={r.id} restaurant={r} />
-              ))}
-            </div>
+            <>
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="font-bold text-gray-800">
+                  📍 신림역 근처 {menuName} 맛집
+                </h3>
+                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                  TOP {restaurants.length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {restaurants.map((r) => (
+                  <RestaurantCard key={r.id} restaurant={r} />
+                ))}
+              </div>
+            </>
           ) : (
-            <div className="text-center py-8 text-gray-400">
-              <p className="text-3xl mb-2">🔍</p>
-              <p className="text-sm">맛집 데이터를 준비 중이에요</p>
+            /* 맛집 데이터 없을 때 */
+            <div className="text-center py-6">
+              <div className="text-4xl mb-3">🗺️</div>
+              <p className="font-bold text-gray-800 mb-1">
+                {menuName} 맛집 데이터가 없어요
+              </p>
+              <p className="text-gray-400 text-sm mb-5">
+                네이버 지도에서 신림역 근처 맛집을 찾아보세요!
+              </p>
+              <a
+                href={naverSearchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-bold transition-colors"
+              >
+                🗺️ 네이버 지도에서 "{menuName}" 검색
+              </a>
             </div>
           )}
         </div>
