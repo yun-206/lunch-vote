@@ -11,8 +11,16 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
   return (
     <html lang="ko">
+      <head>
+        <script
+          id="kakao-map-script"
+          type="text/javascript"
+          src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&libraries=services&autoload=false`}
+        />
+      </head>
       <body>{children}</body>
     </html>
   );

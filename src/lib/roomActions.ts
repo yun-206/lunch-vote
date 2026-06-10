@@ -5,8 +5,9 @@ export type Room = {
   id: string;
   date: string;
   title: string;
+  location: string; // 위치 추가
   createdAt: number;
-  votes: { [menuId: string]: string[] }; // menuId -> 닉네임 배열
+  votes: { [menuId: string]: string[] };
   customItems: { [categoryId: string]: { id: string; name: string }[] };
   finalized: boolean;
   finalMenuId: string | null;
@@ -17,12 +18,13 @@ export function generateRoomId(date: string): string {
   return `${date.replace(/-/g, "")}-${random}`;
 }
 
-export async function createRoom(date: string, title: string): Promise<string> {
+export async function createRoom(date: string, title: string, location = ""): Promise<string> {
   const roomId = generateRoomId(date);
   const room: Room = {
     id: roomId,
     date,
     title,
+    location,
     createdAt: Date.now(),
     votes: {},
     customItems: {},
@@ -39,7 +41,6 @@ export async function getRoom(roomId: string): Promise<Room | null> {
   return snapshot.val() as Room;
 }
 
-// 투표: 닉네임 배열로 관리
 export async function castVote(
   roomId: string,
   menuId: string,
@@ -49,14 +50,9 @@ export async function castVote(
   const voteRef = ref(db, `rooms/${roomId}/votes/${menuId}`);
   const snapshot = await get(voteRef);
   const current: string[] = snapshot.exists() ? (snapshot.val() as string[]) : [];
-
-  let updated: string[];
-  if (isRemoving) {
-    updated = current.filter((n) => n !== nickname);
-  } else {
-    if (current.includes(nickname)) return;
-    updated = [...current, nickname];
-  }
+  const updated = isRemoving
+    ? current.filter((n) => n !== nickname)
+    : current.includes(nickname) ? current : [...current, nickname];
   await set(voteRef, updated);
 }
 
@@ -72,14 +68,8 @@ export async function addCustomItemToRoom(
   });
 }
 
-export async function finalizeRoom(
-  roomId: string,
-  finalMenuId: string
-): Promise<void> {
-  await update(ref(db, `rooms/${roomId}`), {
-    finalized: true,
-    finalMenuId,
-  });
+export async function finalizeRoom(roomId: string, finalMenuId: string): Promise<void> {
+  await update(ref(db, `rooms/${roomId}`), { finalized: true, finalMenuId });
 }
 
 export function subscribeToRoom(

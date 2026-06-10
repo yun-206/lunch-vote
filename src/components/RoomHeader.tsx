@@ -3,6 +3,7 @@
 type Props = {
   title: string;
   date: string;
+  location?: string;
   totalVotes: number;
   topMenuName: string | null;
   topMenuCount: number;
@@ -13,18 +14,7 @@ type Props = {
   nickname: string | null;
 };
 
-export default function RoomHeader({
-  title,
-  date,
-  totalVotes,
-  topMenuName,
-  topMenuCount,
-  onFinalize,
-  isFinalized,
-  onCopyLink,
-  copied,
-  nickname,
-}: Props) {
+export default function RoomHeader({ title, date, location, totalVotes, topMenuName, topMenuCount, onFinalize, isFinalized, onCopyLink, copied, nickname }: Props) {
   const formatDateKr = (dateStr: string) => {
     if (!dateStr) return "";
     const d = new Date(dateStr + "T00:00:00");
@@ -36,58 +26,34 @@ export default function RoomHeader({
     <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-orange-100 shadow-sm">
       <div className="max-w-2xl mx-auto px-4 py-3">
         <div className="flex items-center gap-2">
-          {/* 홈 버튼 */}
           <a href="/" className="text-xl shrink-0">🍱</a>
-
-          {/* 방 정보 */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               <h1 className="font-black text-gray-900 text-base truncate">{title}</h1>
               <span className="text-xs text-gray-400 shrink-0">{formatDateKr(date)}</span>
             </div>
             <p className="text-xs text-gray-400 mt-0.5">
+              {location && <span className="text-orange-400 mr-1.5">📍{location}</span>}
               {totalVotes > 0 ? (
-                <>
-                  총 <span className="font-bold text-gray-600">{totalVotes}표</span>
-                  {topMenuName && (
-                    <> · 선두 <span className="font-bold text-orange-500">{topMenuName}</span> ({topMenuCount}표)</>
-                  )}
+                <>총 <span className="font-bold text-gray-600">{totalVotes}표</span>
+                  {topMenuName && <> · 선두 <span className="font-bold text-orange-500">{topMenuName}</span> ({topMenuCount}표)</>}
                 </>
-              ) : (
-                "메뉴를 클릭해서 투표하세요 👆"
-              )}
+              ) : "메뉴를 클릭해서 투표하세요 👆"}
             </p>
           </div>
-
-          {/* 버튼들 */}
           <div className="flex gap-1.5 shrink-0">
-            {/* 링크 복사 */}
-            <button
-              onClick={onCopyLink}
+            <button onClick={onCopyLink}
               className={`px-3 py-2 rounded-xl text-sm font-semibold border-2 transition-all
-                ${copied
-                  ? "border-green-400 bg-green-50 text-green-600"
-                  : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                }`}
-            >
+                ${copied ? "border-green-400 bg-green-50 text-green-600" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}>
               {copied ? "✓ 복사됨" : "🔗 초대"}
             </button>
-
-            {/* 결정 */}
             {!isFinalized ? (
-              <button
-                onClick={onFinalize}
-                disabled={totalVotes === 0}
-                className="px-3 py-2 rounded-xl bg-orange-500 text-white text-sm font-bold
-                  hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
-              >
+              <button onClick={onFinalize} disabled={totalVotes === 0}
+                className="px-3 py-2 rounded-xl bg-orange-500 text-white text-sm font-bold hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition">
                 🎯 결정!
               </button>
             ) : (
-              <a
-                href="/"
-                className="px-3 py-2 rounded-xl border-2 border-gray-200 text-gray-500 text-sm font-semibold hover:bg-gray-50 transition"
-              >
+              <a href="/" className="px-3 py-2 rounded-xl border-2 border-gray-200 text-gray-500 text-sm font-semibold hover:bg-gray-50 transition">
                 🔄 새 방
               </a>
             )}
