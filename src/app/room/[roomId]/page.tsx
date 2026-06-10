@@ -15,6 +15,7 @@ import VoteChart from "@/components/VoteChart";
 import ResultModal from "@/components/ResultModal";
 import RoomHeader from "@/components/RoomHeader";
 import NicknameModal from "@/components/NicknameModal";
+import RouletteModal from "@/components/RouletteModal";
 
 export default function RoomPage() {
   const params = useParams();
@@ -27,6 +28,7 @@ export default function RoomPage() {
   const [myVotes, setMyVotes] = useState<Set<string>>(new Set());
   const [showResult, setShowResult] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [tiedMenus, setTiedMenus] = useState<{ menuId: string; name: string; count: number }[] | null>(null);
 
   useEffect(() => {
     const unsubscribe = subscribeToRoom(roomId, (data) => {
@@ -69,6 +71,28 @@ export default function RoomPage() {
     return null;
   }, [votes, mergedCategories]);
 
+  // 동점 메뉴 목록 반환
+  const getTiedMenus = useCallback(() => {
+    let maxCount = 0;
+    Object.values(votes).forEach((voters) => {
+      const count = Array.isArray(voters) ? voters.length : 0;
+      if (count > maxCount) maxCount = count;
+    });
+    if (maxCount === 0) return [];
+
+    const tied: { menuId: string; name: string; count: number }[] = [];
+    Object.entries(votes).forEach(([id, voters]) => {
+      const count = Array.isArray(voters) ? voters.length : 0;
+      if (count === maxCount) {
+        for (const cat of mergedCategories) {
+          const item = cat.items.find((i) => i.id === id);
+          if (item) { tied.push({ menuId: id, name: item.name, count }); break; }
+        }
+      }
+    });
+    return tied;
+  }, [votes, mergedCategories]);
+
   const getCategoryVoteSummary = useCallback(() => {
     return mergedCategories.map((cat) => ({
       categoryId: cat.id,
@@ -100,8 +124,20 @@ export default function RoomPage() {
   };
 
   const handleFinalize = async () => {
-    if (!top) return;
-    await finalizeRoom(roomId, top.menuId);
+    if (totalVotes === 0) return;
+    const tied = getTiedMenus();
+    if (tied.length > 1) {
+      // 동점! 룰렛 시작
+      setTiedMenus(tied);
+    } else if (top) {
+      // 단독 1위 바로 확정
+      await finalizeRoom(roomId, top.menuId);
+    }
+  };
+
+  const handleRouletteResult = async (menuId: string) => {
+    setTiedMenus(null);
+    await finalizeRoom(roomId, menuId);
   };
 
   const handleCopyLink = () => {
@@ -142,9 +178,13 @@ export default function RoomPage() {
 
   return (
     <div className="min-h-screen bg-orange-50/50">
-      {/* 닉네임 팝업 */}
-      {!nickname && (
-        <NicknameModal onConfirm={(name) => setNickname(name)} />
+      {!nickname && <NicknameModal onConfirm={(name) => setNickname(name)} />}
+
+      {tiedMenus && (
+        <RouletteModal
+          tiedMenus={tiedMenus}
+          onSelected={(menuId, name) => handleRouletteResult(menuId)}
+        />
       )}
 
       <RoomHeader
