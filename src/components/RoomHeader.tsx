@@ -12,9 +12,11 @@ type Props = {
   onCopyLink: () => void;
   copied: boolean;
   nickname: string | null;
+  mode: "food" | "cafe" | null;
+  onSwitchMode: () => void;
 };
 
-export default function RoomHeader({ title, date, location, totalVotes, topMenuName, topMenuCount, onFinalize, isFinalized, onCopyLink, copied, nickname }: Props) {
+export default function RoomHeader({ title, date, location, totalVotes, topMenuName, topMenuCount, onFinalize, isFinalized, onCopyLink, copied, nickname, mode, onSwitchMode }: Props) {
   const formatDateKr = (dateStr: string) => {
     if (!dateStr) return "";
     const d = new Date(dateStr + "T00:00:00");
@@ -24,9 +26,16 @@ export default function RoomHeader({ title, date, location, totalVotes, topMenuN
 
   return (
     <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-orange-100 shadow-sm">
-      <div className="max-w-2xl mx-auto px-4 py-3">
+      <div className="max-w-full px-4 py-3">
         <div className="flex items-center gap-2">
           <a href="/" className="text-xl shrink-0">🍱</a>
+          {mode && (
+            <button onClick={onSwitchMode}
+              className={`shrink-0 text-xs font-bold px-2.5 py-1 rounded-full border-2 transition
+                ${mode === "cafe" ? "border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100" : "border-orange-300 bg-orange-50 text-orange-600 hover:bg-orange-100"}`}>
+              {mode === "cafe" ? "☕ 카페" : "🍽️ 음식점"}
+            </button>
+          )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               <h1 className="font-black text-gray-900 text-base truncate">{title}</h1>
