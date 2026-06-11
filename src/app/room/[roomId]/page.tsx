@@ -39,12 +39,15 @@ export default function RoomPage() {
     return unsubscribe;
   }, [roomId]);
 
-  const location = room?.location || "";
-
+  // mode 또는 room.location이 바뀔 때 지도 업데이트
   useEffect(() => {
-    if (mode === "cafe") setMapQuery(`${location} 카페`);
-    else if (mode === "food") setMapQuery(`${location} 음식점`);
-  }, [mode, location]);
+    if (!mode || !room) return;
+    const loc = room.location || "";
+    if (mode === "cafe") setMapQuery(loc ? `${loc} 카페` : "카페");
+    else if (mode === "food") setMapQuery(loc ? `${loc} 음식점` : "음식점");
+  }, [mode, room]);
+
+  const location = room?.location || "";
 
   const mergedCategories: Category[] = INITIAL_CATEGORIES.map((cat) => {
     const customs = room?.customItems?.[cat.id] || [];
@@ -107,7 +110,7 @@ export default function RoomPage() {
     isVoted ? next.delete(menuId) : next.add(menuId);
     setMyVotes(next);
     await castVote(roomId, menuId, nickname, isVoted);
-    if (!isVoted) setMapQuery(`${location} ${menuName}`);
+    if (!isVoted) setMapQuery(location ? `${location} ${menuName}` : menuName);
   };
 
   const handleAddItem = async (categoryId: string, name: string) => {
@@ -169,7 +172,7 @@ export default function RoomPage() {
             <>
               <VoteChart summary={getCategoryVoteSummary()} />
               {mergedCategories.map((category) => (
-                <div key={category.id} onClick={() => setMapQuery(`${location} ${category.name}`)}>
+                <div key={category.id} onClick={() => setMapQuery(location ? `${location} ${category.name}` : category.name)}>
                   <CategoryCard
                     category={category} votes={votes} myVotes={myVotes}
                     onVote={handleVote} onAddItem={handleAddItem}
@@ -192,7 +195,7 @@ export default function RoomPage() {
         <div className="hidden lg:flex lg:w-1/2 flex-col sticky top-0 h-full border-l border-orange-100">
           <div className="bg-orange-50 px-4 py-2 text-xs font-medium text-orange-600 flex items-center justify-between border-b border-orange-100">
             <span>🗺️ {mapQuery}</span>
-            <button onClick={() => setMapQuery(`${location} ${mode === "cafe" ? "카페" : "음식점"}`)}
+            <button onClick={() => setMapQuery(location ? `${location} ${mode === "cafe" ? "카페" : "음식점"}` : "")}
               className="text-gray-400 hover:text-orange-400 transition text-xs">초기화</button>
           </div>
           <div className="flex-1">
