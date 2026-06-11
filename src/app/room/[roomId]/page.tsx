@@ -19,7 +19,6 @@ type Mode = "food" | "cafe";
 export default function RoomPage() {
   const params = useParams();
   const roomId = params.roomId as string;
-
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -156,7 +155,6 @@ export default function RoomPage() {
       {!nickname && <NicknameModal onConfirm={(name) => setNickname(name)} />}
       {nickname && !mode && <ModeSelectModal onSelect={(m) => setMode(m)} />}
       {tiedMenus && <RouletteModal tiedMenus={tiedMenus} onSelected={(menuId) => handleRouletteResult(menuId)} />}
-
       <RoomHeader
         title={room?.title || ""} date={room?.date || ""}
         location={room?.location || ""}
@@ -165,7 +163,6 @@ export default function RoomPage() {
         onCopyLink={handleCopyLink} copied={copied} nickname={nickname}
         mode={mode} onSwitchMode={() => setMode(null)}
       />
-
       <div className="flex h-[calc(100vh-56px)]">
         <div className="w-full lg:w-1/2 overflow-y-auto px-4 py-4 space-y-4">
           {mode === "food" && (
@@ -192,7 +189,6 @@ export default function RoomPage() {
           )}
           <p className="text-center text-xs text-gray-400 pb-6">방 ID: {roomId}</p>
         </div>
-
         <div className="hidden lg:flex lg:w-1/2 flex-col sticky top-0 h-full border-l border-orange-100">
           <div className="bg-orange-50 px-4 py-2 text-xs font-medium text-orange-600 flex items-center justify-between border-b border-orange-100">
             <span>🗺️ {mapQuery}</span>
@@ -204,7 +200,6 @@ export default function RoomPage() {
           </div>
         </div>
       </div>
-
       {showResult && room?.finalMenuId && finalMenuItem && (
         <ResultModal
           menuName={finalMenuItem.name} menuId={room.finalMenuId}
