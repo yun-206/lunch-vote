@@ -39,7 +39,7 @@ export default function RoomPage() {
     return unsubscribe;
   }, [roomId]);
 
-  const location = room?.location || "신림역";
+  const location = room?.location || "";
 
   useEffect(() => {
     if (mode === "cafe") setMapQuery(`${location} 카페`);
