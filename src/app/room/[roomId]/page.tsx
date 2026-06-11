@@ -10,6 +10,7 @@ import ResultModal from "@/components/ResultModal";
 import RoomHeader from "@/components/RoomHeader";
 import NicknameModal from "@/components/NicknameModal";
 import RouletteModal from "@/components/RouletteModal";
+import KakaoMap from "@/components/KakaoMap";
 
 export default function RoomPage() {
   const params = useParams();
@@ -23,11 +24,18 @@ export default function RoomPage() {
   const [showResult, setShowResult] = useState(false);
   const [copied, setCopied] = useState(false);
   const [tiedMenus, setTiedMenus] = useState<{ menuId: string; name: string; count: number }[] | null>(null);
+  const [mapQuery, setMapQuery] = useState("");
 
   useEffect(() => {
     const unsubscribe = subscribeToRoom(roomId, (data) => {
       if (!data) { setNotFound(true); }
-      else { setRoom(data); if (data.finalized) setShowResult(true); }
+      else {
+        setRoom(data);
+        if (data.finalized) setShowResult(true);
+        // 기본 지도 쿼리: 위치 + 음식점
+        if (!mapQuery && data.location) setMapQuery(`${data.location} 음식점`);
+        else if (!mapQuery) setMapQuery("신림역 음식점");
+      }
       setLoading(false);
     });
     return unsubscribe;
@@ -39,6 +47,7 @@ export default function RoomPage() {
   });
 
   const votes = room?.votes || {};
+  const location = room?.location || "신림역";
 
   const getTopMenuItem = useCallback(() => {
     let maxCount = 0, topMenuId = "";
@@ -82,13 +91,19 @@ export default function RoomPage() {
   const totalVotes = Object.values(votes).reduce((s, v) => s + (Array.isArray(v) ? v.length : 0), 0);
   const top = getTopMenuItem();
 
-  const handleVote = async (menuId: string) => {
+  const handleVote = async (menuId: string, menuName: string) => {
     if (room?.finalized || !nickname) return;
     const isVoted = myVotes.has(menuId);
     const next = new Set(myVotes);
     isVoted ? next.delete(menuId) : next.add(menuId);
     setMyVotes(next);
     await castVote(roomId, menuId, nickname, isVoted);
+    // 클릭한 메뉴로 지도 업데이트
+    if (!isVoted) setMapQuery(`${location} ${menuName}`);
+  };
+
+  const handleCategoryMapUpdate = (categoryName: string) => {
+    setMapQuery(`${location} ${categoryName}`);
   };
 
   const handleAddItem = async (categoryId: string, name: string) => {
@@ -147,15 +162,47 @@ export default function RoomPage() {
         onCopyLink={handleCopyLink} copied={copied} nickname={nickname}
       />
 
-      <main className="max-w-2xl mx-auto px-4 py-4 space-y-4">
-        <VoteChart summary={getCategoryVoteSummary()} />
-        {mergedCategories.map((category) => (
-          <CategoryCard key={category.id} category={category} votes={votes} myVotes={myVotes}
-            onVote={handleVote} onAddItem={handleAddItem}
-            topMenuId={top?.menuId ?? null} isFinalized={!!room?.finalized} />
-        ))}
-        <p className="text-center text-xs text-gray-400 pb-6">방 ID: {roomId}</p>
-      </main>
+      {/* 2단 레이아웃 */}
+      <div className="flex h-[calc(100vh-56px)]">
+
+        {/* 왼쪽: 투표 패널 */}
+        <div className="w-full lg:w-1/2 overflow-y-auto px-4 py-4 space-y-4">
+          <VoteChart summary={getCategoryVoteSummary()} />
+
+          {mergedCategories.map((category) => (
+            <CategoryCardWithMap
+              key={category.id}
+              category={category}
+              votes={votes}
+              myVotes={myVotes}
+              onVote={(menuId, menuName) => handleVote(menuId, menuName)}
+              onCategoryClick={() => handleCategoryMapUpdate(category.name)}
+              onAddItem={handleAddItem}
+              topMenuId={top?.menuId ?? null}
+              isFinalized={!!room?.finalized}
+            />
+          ))}
+
+          <p className="text-center text-xs text-gray-400 pb-6">방 ID: {roomId}</p>
+        </div>
+
+        {/* 오른쪽: 지도 패널 (데스크톱만) */}
+        <div className="hidden lg:flex lg:w-1/2 flex-col sticky top-0 h-full border-l border-orange-100">
+          <div className="bg-orange-50 px-4 py-2 text-xs font-medium text-orange-600 flex items-center gap-2 border-b border-orange-100">
+            <span>🗺️</span>
+            <span className="flex-1 truncate">{mapQuery}</span>
+            <button
+              onClick={() => setMapQuery(`${location} 음식점`)}
+              className="text-gray-400 hover:text-orange-400 transition text-xs"
+            >
+              초기화
+            </button>
+          </div>
+          <div className="flex-1">
+            <KakaoMap query={mapQuery} height="100%" />
+          </div>
+        </div>
+      </div>
 
       {showResult && room?.finalMenuId && finalMenuItem && finalCategory && (
         <ResultModal
@@ -166,6 +213,34 @@ export default function RoomPage() {
           onReset={() => { window.location.href = "/"; }}
         />
       )}
+    </div>
+  );
+}
+
+// 지도 연동 CategoryCard 래퍼
+function CategoryCardWithMap({
+  category, votes, myVotes, onVote, onCategoryClick, onAddItem, topMenuId, isFinalized
+}: {
+  category: Category;
+  votes: { [menuId: string]: string[] };
+  myVotes: Set<string>;
+  onVote: (menuId: string, menuName: string) => void;
+  onCategoryClick: () => void;
+  onAddItem: (categoryId: string, name: string) => void;
+  topMenuId: string | null;
+  isFinalized: boolean;
+}) {
+  return (
+    <div onClick={onCategoryClick}>
+      <CategoryCard
+        category={category}
+        votes={votes}
+        myVotes={myVotes}
+        onVote={onVote}
+        onAddItem={onAddItem}
+        topMenuId={topMenuId}
+        isFinalized={isFinalized}
+      />
     </div>
   );
 }
